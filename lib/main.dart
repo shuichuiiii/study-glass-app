@@ -377,7 +377,7 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-class LiquidDock extends StatelessWidget {
+class LiquidDock extends StatefulWidget {
   const LiquidDock({super.key, required this.index, required this.glass, required this.floatingBar, required this.animate, required this.onSelect});
   final int index;
   final String glass;
@@ -392,119 +392,197 @@ class LiquidDock extends StatelessWidget {
   ];
 
   @override
+  State<LiquidDock> createState() => _LiquidDockState();
+}
+
+class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateMixin {
+  late final AnimationController _press = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 180),
+    reverseDuration: const Duration(milliseconds: 360),
+    lowerBound: 0,
+    upperBound: 1,
+  );
+  double? _dragX;
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  void _selectAt(double dx, double width) {
+    final next = (dx / width * LiquidDock.items.length)
+        .floor()
+        .clamp(0, LiquidDock.items.length - 1);
+    if (next != widget.index) widget.onSelect(next);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final disabled = glass == 'off';
-    final floating = floatingBar;
-    final barHeight = floating ? 64.0 : 66.0;
-    final radius = floating ? 32.0 : 0.0;
+    final disabled = widget.glass == 'off';
+    final floating = widget.floatingBar;
+    final barHeight = floating ? 68.0 : 66.0;
+    final radius = floating ? 34.0 : 0.0;
     final outerShadows = floating
         ? [
             BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? .22 : .10),
-              blurRadius: 18,
-              offset: const Offset(0, 5),
+              color: Colors.black.withValues(alpha: dark ? .24 : .12),
+              blurRadius: 22,
+              spreadRadius: -2,
+              offset: const Offset(0, 7),
             ),
           ]
         : const <BoxShadow>[];
-    final content = SizedBox(
-      height: barHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth / items.length;
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              AnimatedPositioned(
-                duration: Duration(milliseconds: animate ? 400 : 0),
-                curve: Curves.easeOutBack,
-                left: index * width + 4,
-                top: 4,
-                bottom: 4,
-                width: width - 8,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: disabled
-                      ? DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: cs.primary,
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                        )
-                      : LiquidGlass(
-                          style: LiquidGlassStyle.lens(mui.ColorScheme.fromSeed(seedColor: cs.primary, brightness: cs.brightness)),
-                          shadows: [
-                            BoxShadow(
-                              color: cs.primary.withValues(alpha: dark ? .18 : .12),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                          child: const SizedBox.expand(),
-                        ),
-                ),
-              ),
-              Row(
-                children: List.generate(items.length, (i) {
-                  final selected = index == i;
-                  final activeColor = disabled
-                      ? cs.onPrimary
-                      : (dark ? const Color(0xFFF4F6FF) : const Color(0xFF1769D2));
-                  final idleColor = dark
-                      ? const Color(0xFFD0D1DB)
-                      : const Color(0xFF555D70);
-                  return Expanded(
-                    child: Semantics(
-                      button: true,
-                      selected: selected,
-                      label: items[i].label,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(26),
-                        onTap: () => onSelect(i),
-                        child: SizedBox(
-                          height: barHeight,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AnimatedScale(
-                                scale: selected ? 1.04 : 1,
-                                duration: Duration(milliseconds: animate ? 200 : 0),
-                                child: Icon(
-                                  selected ? items[i].selected : items[i].icon,
-                                  size: 28,
-                                  color: selected ? activeColor : idleColor,
+
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth / LiquidDock.items.length;
+        final lensIndex = _dragX == null
+            ? widget.index.toDouble()
+            : (_dragX! / width).clamp(0.0, LiquidDock.items.length - 1.0);
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragStart: (details) {
+            _dragX = details.localPosition.dx;
+            if (widget.animate) _press.forward();
+            setState(() {});
+          },
+          onHorizontalDragUpdate: (details) {
+            _dragX = ((_dragX ?? details.localPosition.dx) + details.delta.dx)
+                .clamp(0.0, constraints.maxWidth);
+            _selectAt(_dragX!, width);
+            setState(() {});
+          },
+          onHorizontalDragEnd: (_) {
+            _dragX = null;
+            _press.reverse();
+            setState(() {});
+          },
+          onHorizontalDragCancel: () {
+            _dragX = null;
+            _press.reverse();
+            setState(() {});
+          },
+          child: AnimatedBuilder(
+            animation: _press,
+            builder: (context, child) {
+              final lift = 1 + _press.value * .045;
+              return Transform.scale(
+                scale: lift,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AnimatedPositioned(
+                      duration: Duration(milliseconds: widget.animate && _dragX == null ? 430 : 0),
+                      curve: Curves.easeOutBack,
+                      left: lensIndex * width + 4,
+                      top: 4 - _press.value * 2,
+                      bottom: 4 - _press.value * 2,
+                      width: width - 8,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: disabled
+                            ? DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: cs.primary,
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                items[i].label,
-                                maxLines: 1,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  height: 1.2,
-                                  letterSpacing: .1,
-                                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                                  color: selected ? activeColor : idleColor,
+                              )
+                            : LiquidGlass(
+                                style: LiquidGlassStyle.lens(
+                                  mui.ColorScheme.fromSeed(
+                                    seedColor: cs.primary,
+                                    brightness: cs.brightness,
+                                  ),
                                 ),
+                                shadows: [
+                                  BoxShadow(
+                                    color: cs.primary.withValues(alpha: dark ? .24 : .16),
+                                    blurRadius: 14 + _press.value * 8,
+                                    spreadRadius: _press.value * 1.2,
+                                    offset: Offset(0, 2 + _press.value * 2),
+                                  ),
+                                ],
+                                child: const SizedBox.expand(),
                               ),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
-                  );
-                }),
-              ),
-            ],
-          );
-        },
-      ),
+                    Row(
+                      children: List.generate(LiquidDock.items.length, (i) {
+                        final selected = widget.index == i;
+                        final activeColor = disabled
+                            ? cs.onPrimary
+                            : (dark ? const Color(0xFFF4F6FF) : const Color(0xFF1769D2));
+                        final idleColor = dark
+                            ? const Color(0xFFD0D1DB)
+                            : const Color(0xFF555D70);
+                        return Expanded(
+                          child: Semantics(
+                            button: true,
+                            selected: selected,
+                            label: LiquidDock.items[i].label,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                if (widget.animate) {
+                                  _press.forward().then((_) {
+                                    if (mounted) _press.reverse();
+                                  });
+                                }
+                                widget.onSelect(i);
+                              },
+                              child: SizedBox(
+                                height: barHeight,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    AnimatedScale(
+                                      scale: selected ? 1.08 : .96,
+                                      duration: Duration(milliseconds: widget.animate ? 260 : 0),
+                                      curve: Curves.easeOutBack,
+                                      child: Icon(
+                                        selected ? LiquidDock.items[i].selected : LiquidDock.items[i].icon,
+                                        size: selected ? 28 : 26,
+                                        color: selected ? activeColor : idleColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    AnimatedDefaultTextStyle(
+                                      duration: Duration(milliseconds: widget.animate ? 180 : 0),
+                                      style: TextStyle(
+                                        fontSize: selected ? 10.5 : 10,
+                                        height: 1.2,
+                                        letterSpacing: .1,
+                                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                        color: selected ? activeColor : idleColor,
+                                      ),
+                                      child: Text(LiquidDock.items[i].label, maxLines: 1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
+
     if (disabled) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: Container(
+          height: barHeight,
           decoration: BoxDecoration(
             color: cs.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(radius),
@@ -518,9 +596,11 @@ class LiquidDock extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: LiquidGlass(
-        style: LiquidGlassStyle.pill(mui.ColorScheme.fromSeed(seedColor: cs.primary, brightness: cs.brightness)),
+        style: LiquidGlassStyle.pill(
+          mui.ColorScheme.fromSeed(seedColor: cs.primary, brightness: cs.brightness),
+        ),
         shadows: outerShadows,
-        child: content,
+        child: SizedBox(height: barHeight, child: content),
       ),
     );
   }
