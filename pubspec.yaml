@@ -1,0 +1,17 @@
+name: study_glass
+description: Flutter learning app with floating liquid-glass navigation.
+publish_to: 'none'
+version: 0.1.0+1
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  dynamic_color: ^1.7.0
+  shared_preferences: ^2.3.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+flutter:
+  uses-material-design: true
