@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show ClipOp, lerpDouble;
 
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 abstract final class AppCorner {
   static const double none = 0;
