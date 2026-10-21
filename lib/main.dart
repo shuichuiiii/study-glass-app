@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:study_glass/flclash/liquid_glass.dart';
 
 void main() => runApp(const StudyGlassApp());
 
@@ -385,210 +386,131 @@ class LiquidDock extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final disabled = glass == 'off';
-    final ultra = glass == 'ultra';
-    final radius = floatingBar ? 30.0 : 0.0;
-    final barHeight = floatingBar ? 64.0 : 66.0;
-    final blur = ultra ? 24.0 : 14.0;
-    final surface = dark ? const Color(0xFF22232C) : const Color(0xFFF9FAFF);
-    final outline = dark
-        ? Colors.white.withValues(alpha: .18)
-        : const Color(0xFF6F7488).withValues(alpha: .24);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: disabled ? 0 : blur,
-          sigmaY: disabled ? 0 : blur,
-        ),
-        child: Container(
-          height: barHeight,
-          decoration: BoxDecoration(
-            color: disabled
-                ? cs.surfaceContainerHigh
-                : surface.withValues(alpha: ultra ? (dark ? .88 : .90) : .94),
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: outline, width: .9),
-            boxShadow: floatingBar
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: dark ? .20 : .075),
-                      blurRadius: ultra ? 20 : 14,
-                      offset: const Offset(0, 5),
-                    ),
-                    if (ultra)
-                      BoxShadow(
-                        color: Colors.white.withValues(alpha: dark ? .045 : .65),
-                        blurRadius: 1,
-                        offset: const Offset(0, -1),
-                      ),
-                  ]
-                : const [],
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth / items.length;
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  // A restrained top-edge reflection keeps the outer pane readable
-                  // instead of turning the whole dock into a purple blur.
-                  if (!disabled)
-                    Positioned(
-                      left: 1,
-                      right: 1,
-                      top: 1,
-                      height: 15,
-                      child: IgnorePointer(
-                        child: DecoratedBox(
+    final floating = floatingBar;
+    final barHeight = floating ? 64.0 : 66.0;
+    final radius = floating ? 32.0 : 0.0;
+    final outerShadows = floating
+        ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? .22 : .10),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
+            ),
+          ]
+        : const <BoxShadow>[];
+    final content = SizedBox(
+      height: barHeight,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth / items.length;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              AnimatedPositioned(
+                duration: Duration(milliseconds: animate ? 400 : 0),
+                curve: Curves.easeOutBack,
+                left: index * width + 4,
+                top: 4,
+                bottom: 4,
+                width: width - 8,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: disabled
+                      ? DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(radius),
-                            ),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.white.withValues(alpha: dark ? .09 : .52),
-                                Colors.white.withValues(alpha: 0),
-                              ],
-                            ),
+                            color: cs.primary,
+                            borderRadius: BorderRadius.circular(28),
                           ),
-                        ),
-                      ),
-                    ),
-                  AnimatedPositioned(
-                    duration: Duration(milliseconds: animate ? 430 : 0),
-                    curve: Curves.easeOutBack,
-                    left: index * width + 4,
-                    top: 4,
-                    bottom: 4,
-                    width: width - 8,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: disabled
-                                ? [cs.primary, cs.primary]
-                                : dark
-                                    ? [
-                                        cs.primary.withValues(alpha: .42),
-                                        cs.primary.withValues(alpha: .26),
-                                      ]
-                                    : [
-                                        const Color(0xFFE5F0FF),
-                                        const Color(0xFFD5E6FF),
-                                      ],
-                          ),
-                          border: Border.all(
-                            color: disabled
-                                ? cs.primary.withValues(alpha: .2)
-                                : cs.primary.withValues(alpha: dark ? .38 : .22),
-                            width: .8,
-                          ),
-                          boxShadow: disabled
-                              ? const []
-                              : [
-                                  BoxShadow(
-                                    color: cs.primary.withValues(alpha: dark ? .10 : .08),
-                                    blurRadius: 5,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            if (!disabled)
-                              Align(
-                                alignment: Alignment.topCenter,
-                                child: Container(
-                                  height: 9,
-                                  margin: const EdgeInsets.symmetric(horizontal: 7),
-                                  decoration: BoxDecoration(
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(20),
-                                    ),
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.white.withValues(alpha: dark ? .20 : .85),
-                                        Colors.white.withValues(alpha: 0),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            Align(
-                              alignment: Alignment.bottomCenter,
-                              child: Container(
-                                height: 1,
-                                color: Colors.white.withValues(alpha: dark ? .10 : .58),
-                              ),
+                        )
+                      : LiquidGlass(
+                          style: LiquidGlassStyle.lens(cs),
+                          shadows: [
+                            BoxShadow(
+                              color: cs.primary.withValues(alpha: dark ? .18 : .12),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
+                          child: const SizedBox.expand(),
+                        ),
+                ),
+              ),
+              Row(
+                children: List.generate(items.length, (i) {
+                  final selected = index == i;
+                  final activeColor = disabled
+                      ? cs.onPrimary
+                      : (dark ? const Color(0xFFF4F6FF) : const Color(0xFF1769D2));
+                  final idleColor = dark
+                      ? const Color(0xFFD0D1DB)
+                      : const Color(0xFF555D70);
+                  return Expanded(
+                    child: Semantics(
+                      button: true,
+                      selected: selected,
+                      label: items[i].label,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(26),
+                        onTap: () => onSelect(i),
+                        child: SizedBox(
+                          height: barHeight,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AnimatedScale(
+                                scale: selected ? 1.04 : 1,
+                                duration: Duration(milliseconds: animate ? 200 : 0),
+                                child: Icon(
+                                  selected ? items[i].selected : items[i].icon,
+                                  size: 28,
+                                  color: selected ? activeColor : idleColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                items[i].label,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  height: 1.2,
+                                  letterSpacing: .1,
+                                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                  color: selected ? activeColor : idleColor,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Row(
-                    children: List.generate(items.length, (i) {
-                      final selected = index == i;
-                      final activeColor = disabled
-                          ? cs.onPrimary
-                          : (dark ? const Color(0xFFF4F6FF) : const Color(0xFF1769D2));
-                      final idleColor = dark
-                          ? const Color(0xFFD0D1DB)
-                          : const Color(0xFF555D70);
-                      return Expanded(
-                        child: Semantics(
-                          button: true,
-                          selected: selected,
-                          label: items[i].label,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(24),
-                            onTap: () => onSelect(i),
-                            child: SizedBox(
-                              height: barHeight,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  AnimatedScale(
-                                    scale: selected ? 1.04 : 1,
-                                    duration: Duration(milliseconds: animate ? 200 : 0),
-                                    child: Icon(
-                                      selected ? items[i].selected : items[i].icon,
-                                      size: 27,
-                                      color: selected ? activeColor : idleColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    items[i].label,
-                                    maxLines: 1,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      height: 1.15,
-                                      letterSpacing: .1,
-                                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                                      color: selected ? activeColor : idleColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              );
-            },
+                  );
+                }),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (disabled) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Container(
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: cs.outlineVariant.withValues(alpha: .5)),
+            boxShadow: outerShadows,
           ),
+          child: content,
         ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: LiquidGlass(
+        style: LiquidGlassStyle.pill(cs),
+        shadows: outerShadows,
+        child: content,
       ),
     );
   }
