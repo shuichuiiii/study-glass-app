@@ -1,0 +1,63 @@
+name: Build FlClash ARM64 UI reference
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout official FlClash source
+        uses: actions/checkout@v4
+        with:
+          repository: chen08209/FlClash
+          ref: main
+          submodules: recursive
+          fetch-depth: 0
+          path: FlClash
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.6'
+          cache: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache: true
+          cache-dependency-path: FlClash/core/go.sum
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28c
+          link-to-sdk: true
+
+      - name: Build official ARM64 APK
+        working-directory: FlClash
+        run: |
+          flutter pub get
+          dart setup.dart android --arch arm64
+
+      - name: Upload APKs for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: flclash-arm64-reference-apk
+          path: FlClash/dist/**/*.apk
+          if-no-files-found: error
+          retention-days: 7
