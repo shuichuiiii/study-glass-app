@@ -577,28 +577,48 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
     );
 
     if (disabled) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: Container(
-          height: barHeight,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: cs.outlineVariant.withValues(alpha: .5)),
-            boxShadow: outerShadows,
+      return AnimatedBuilder(
+        animation: _press,
+        builder: (context, child) => Transform.scale(
+          // Restore the whole dock's subtle press/lift response. Flutter's
+          // transformed hit testing keeps pointer coordinates aligned.
+          scale: 1 + _press.value * 0.025,
+          alignment: Alignment.bottomCenter,
+          child: child,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(radius),
+          child: Container(
+            height: barHeight,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: .5)),
+              boxShadow: outerShadows,
+            ),
+            child: content,
           ),
-          child: content,
         ),
       );
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: LiquidGlass(
-        style: LiquidGlassStyle.pill(
-          mui.ColorScheme.fromSeed(seedColor: cs.primary, brightness: cs.brightness),
+    return AnimatedBuilder(
+      animation: _press,
+      builder: (context, child) => Transform.scale(
+        // Keep the overall dock animation without changing the gesture's
+        // local coordinate system.
+        scale: 1 + _press.value * 0.025,
+        alignment: Alignment.bottomCenter,
+        child: child,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: LiquidGlass(
+          style: LiquidGlassStyle.pill(
+            mui.ColorScheme.fromSeed(seedColor: cs.primary, brightness: cs.brightness),
+          ),
+          shadows: outerShadows,
+          child: SizedBox(height: barHeight, child: content),
         ),
-        shadows: outerShadows,
-        child: SizedBox(height: barHeight, child: content),
       ),
     );
   }
