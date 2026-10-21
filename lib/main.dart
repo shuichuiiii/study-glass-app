@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart' as mui;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:study_glass/flclash/liquid_glass.dart';
 
@@ -423,7 +424,7 @@ class LiquidDock extends StatelessWidget {
                           ),
                         )
                       : LiquidGlass(
-                          style: LiquidGlassStyle.lens(cs),
+                          style: LiquidGlassStyle.lens(mui.ColorScheme.fromSeed(seedColor: cs.primary, brightness: cs.brightness)),
                           shadows: [
                             BoxShadow(
                               color: cs.primary.withValues(alpha: dark ? .18 : .12),
@@ -508,7 +509,7 @@ class LiquidDock extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: LiquidGlass(
-        style: LiquidGlassStyle.pill(cs),
+        style: LiquidGlassStyle.pill(mui.ColorScheme.fromSeed(seedColor: cs.primary, brightness: cs.brightness)),
         shadows: outerShadows,
         child: content,
       ),
