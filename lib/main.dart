@@ -442,7 +442,7 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
         final width = constraints.maxWidth / LiquidDock.items.length;
         final lensIndex = _dragX == null
             ? widget.index.toDouble()
-            : (_dragX! / width).clamp(0.0, LiquidDock.items.length - 1.0);
+            : (_dragX! / width - 0.5).clamp(0.0, LiquidDock.items.length - 1.0);
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onHorizontalDragStart: (details) {
@@ -451,8 +451,10 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
             setState(() {});
           },
           onHorizontalDragUpdate: (details) {
-            _dragX = ((_dragX ?? details.localPosition.dx) + details.delta.dx)
-                .clamp(0.0, constraints.maxWidth);
+            // Use the current pointer position in this detector's local
+            // coordinate space. Do not accumulate delta: the lens and hit
+            // targets must share the same coordinate system.
+            _dragX = details.localPosition.dx.clamp(0.0, constraints.maxWidth);
             _selectAt(_dragX!, width);
             setState(() {});
           },
@@ -469,12 +471,9 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
           child: AnimatedBuilder(
             animation: _press,
             builder: (context, child) {
-              final lift = 1 + _press.value * .045;
-              return Transform.scale(
-                scale: lift,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
+              return Stack(
+                fit: StackFit.expand,
+                children: [
                     AnimatedPositioned(
                       duration: Duration(milliseconds: widget.animate && _dragX == null ? 430 : 0),
                       curve: Curves.easeOutBack,
@@ -569,8 +568,7 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
                         );
                       }),
                     ),
-                  ],
-                ),
+                ],
               );
             },
           ),
