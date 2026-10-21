@@ -21,7 +21,7 @@ GitHub Actions 会在推送代码或手动运行时构建 Android debug APK。�
 
 ## FlClash 设计参考与第三方声明
 
-底栏的视觉目标参考 [FlClash](https://github.com/chen08209/FlClash) 的悬浮导航与 Liquid Glass 设计。FlClash 由其上游作者维护，并采用 GPL-3.0。此版本的底栏是为本应用重新编写的 Flutter 实现；没有直接复制 FlClash 的 `navigation_dock.dart`、`liquid_glass.dart` 或着色器文件，也尚未移植其完整的自定义折射着色器管线。外观上的玻璃高光、边缘、半透明面板和弹性选中切换为本项目实现。
+底栏直接采用并适配了 FlClash 的 `liquid_glass.dart`、`liquid_glass_capture.dart`、`shape.dart` 与 `shaders/liquid_glass.frag`，并使用其 `LiquidGlassStyle.pill` 和 `LiquidGlassStyle.lens` 样式。底栏导航交互仍由本应用负责。相关源文件保留其上游版权与 GPL-3.0 许可要求。
 
 FlClash 上游仓库及许可证：
 - 源码：https://github.com/chen08209/FlClash
