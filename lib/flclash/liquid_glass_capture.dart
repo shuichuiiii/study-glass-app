@@ -336,7 +336,7 @@ class _LiquidGlassHostLayer extends ContainerLayer {
           if (entry.level == level) entry,
       ];
       final (:atlas, :taken, :kept) = _snapshot(level, [
-        for (final entry in members) ...[entry, ?entry.haze],
+        for (final entry in members) ...[entry, if (entry.haze != null) entry.haze!],
       ]);
       if (taken) {
         snapshots++;
