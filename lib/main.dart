@@ -385,21 +385,20 @@ class LiquidDock extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final disabled = glass == 'off';
     final ultra = glass == 'ultra';
-    final blur = ultra ? 36.0 : 18.0;
+    final blur = ultra ? 18.0 : 12.0;
     final radius = floatingBar ? 34.0 : 0.0;
     return ClipRRect(
       borderRadius: BorderRadius.vertical(top: Radius.circular(radius), bottom: Radius.circular(radius)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: disabled ? 0 : blur, sigmaY: disabled ? 0 : blur),
         child: Container(
-          height: 76,
+          height: 88,
           decoration: BoxDecoration(
-            color: disabled ? cs.surfaceContainerHigh : cs.surface.withValues(alpha: ultra ? (dark ? .30 : .22) : (dark ? .66 : .72)),
+            color: disabled ? cs.surfaceContainerHigh : cs.surface.withValues(alpha: ultra ? (dark ? .76 : .86) : (dark ? .80 : .90)),
             borderRadius: BorderRadius.vertical(top: Radius.circular(radius), bottom: Radius.circular(radius)),
-            border: Border.all(color: cs.onSurface.withValues(alpha: ultra ? .20 : .12)),
+            border: Border.all(color: cs.onSurface.withValues(alpha: ultra ? .16 : .12), width: 1.1),
             boxShadow: floatingBar ? [
-              BoxShadow(color: Colors.black.withValues(alpha: dark ? .24 : .12), blurRadius: ultra ? 34 : 26, offset: const Offset(0, 10)),
-              if (ultra) BoxShadow(color: cs.primary.withValues(alpha: .12), blurRadius: 28, spreadRadius: -8),
+              BoxShadow(color: Colors.black.withValues(alpha: dark ? .12 : .06), blurRadius: ultra ? 22 : 18, offset: const Offset(0, 6)),
             ] : const [],
           ),
           child: LayoutBuilder(
@@ -412,45 +411,21 @@ class LiquidDock extends StatelessWidget {
                     duration: Duration(milliseconds: animate ? 420 : 0),
                     curve: Curves.easeOutBack,
                     left: index * width + 6,
-                    top: 6,
-                    bottom: 6,
+                    top: 5,
+                    bottom: 5,
                     width: width - 12,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(28),
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          if (!disabled) BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: ultra ? 22 : 10, sigmaY: ultra ? 22 : 10),
-                            child: const SizedBox.expand(),
-                          ),
                           DecoratedBox(
                             decoration: BoxDecoration(
-                              gradient: disabled
-                                  ? LinearGradient(colors: [cs.primary, cs.primary.withValues(alpha: .82)])
-                                  : LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: ultra
-                                          ? [Colors.white.withValues(alpha: dark ? .24 : .62), cs.primary.withValues(alpha: dark ? .26 : .20), Colors.white.withValues(alpha: dark ? .08 : .30)]
-                                          : [Colors.white.withValues(alpha: .30), cs.primary.withValues(alpha: .20)],
-                                    ),
-                              border: Border.all(color: Colors.white.withValues(alpha: ultra ? .72 : .40), width: ultra ? 1.2 : 1),
-                              boxShadow: [
-                                BoxShadow(color: cs.primary.withValues(alpha: ultra ? .22 : .12), blurRadius: ultra ? 24 : 15, offset: const Offset(0, 4)),
-                                if (ultra) BoxShadow(color: Colors.white.withValues(alpha: dark ? .08 : .25), blurRadius: 5, offset: const Offset(0, -2)),
-                              ],
+                              color: disabled ? cs.primary : cs.primary.withValues(alpha: dark ? .28 : .12),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(color: cs.primary.withValues(alpha: dark ? .12 : .04)),
                             ),
-                          ),
-                          if (ultra && !disabled) Positioned(
-                            left: 8, right: 8, top: 1, height: 16,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
-                                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.white.withValues(alpha: dark ? .28 : .62), Colors.white.withValues(alpha: 0)]),
-                              ),
-                            ),
-                          ),
+                          )
                         ],
                       ),
                     ),
@@ -464,17 +439,17 @@ class LiquidDock extends StatelessWidget {
                           borderRadius: BorderRadius.circular(28),
                           onTap: () => onSelect(i),
                           child: SizedBox(
-                            height: 76,
+                            height: 88,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 AnimatedScale(
                                   scale: index == i ? 1.08 : 1,
                                   duration: Duration(milliseconds: animate ? 220 : 0),
-                                  child: Icon(index == i ? items[i].selected : items[i].icon, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant),
+                                  child: Icon(index == i ? items[i].selected : items[i].icon, size: 34, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant),
                                 ),
-                                const SizedBox(height: 3),
-                                Text(items[i].label, style: TextStyle(fontSize: 11, fontWeight: index == i ? FontWeight.w700 : FontWeight.w500, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant)),
+                                const SizedBox(height: 6),
+                                Text(items[i].label, style: TextStyle(fontSize: 17, fontWeight: index == i ? FontWeight.w600 : FontWeight.w500, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant)),
                               ],
                             ),
                           ),
