@@ -117,7 +117,14 @@ class _StudyHomeState extends State<StudyHome> {
       ),
     ];
     return Scaffold(
-      body: Stack(
+      body: LiquidGlassScope(
+        enabled: widget.glass != 'off',
+        quality: widget.glass == 'standard'
+            ? LiquidGlassQuality.standard
+            : LiquidGlassQuality.ultra,
+        child: LiquidGlassHost(
+          enabled: widget.glass != 'off',
+          child: Stack(
         children: [
           Positioned.fill(
             child: AnimatedSwitcher(
@@ -145,6 +152,8 @@ class _StudyHomeState extends State<StudyHome> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
