@@ -2,6 +2,9 @@ name: Build FlClash ARM64 UI reference
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-flclash-arm64-reference.yml'
 
 permissions:
   contents: read
