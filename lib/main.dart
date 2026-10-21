@@ -373,6 +373,7 @@ class LiquidDock extends StatelessWidget {
   final bool floatingBar;
   final bool animate;
   final ValueChanged<int> onSelect;
+
   static const items = <({IconData icon, IconData selected, String label})>[
     (icon: Icons.auto_stories_outlined, selected: Icons.auto_stories_rounded, label: '学习'),
     (icon: Icons.library_books_outlined, selected: Icons.library_books_rounded, label: '词库'),
@@ -385,77 +386,203 @@ class LiquidDock extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final disabled = glass == 'off';
     final ultra = glass == 'ultra';
-    final blur = ultra ? 18.0 : 12.0;
-    final radius = floatingBar ? 34.0 : 0.0;
+    final radius = floatingBar ? 30.0 : 0.0;
+    final barHeight = floatingBar ? 64.0 : 66.0;
+    final blur = ultra ? 24.0 : 14.0;
+    final surface = dark ? const Color(0xFF22232C) : const Color(0xFFF9FAFF);
+    final outline = dark
+        ? Colors.white.withValues(alpha: .18)
+        : const Color(0xFF6F7488).withValues(alpha: .24);
     return ClipRRect(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(radius), bottom: Radius.circular(radius)),
+      borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: disabled ? 0 : blur, sigmaY: disabled ? 0 : blur),
+        filter: ImageFilter.blur(
+          sigmaX: disabled ? 0 : blur,
+          sigmaY: disabled ? 0 : blur,
+        ),
         child: Container(
-          height: 88,
+          height: barHeight,
           decoration: BoxDecoration(
-            color: disabled ? cs.surfaceContainerHigh : cs.surface.withValues(alpha: ultra ? (dark ? .76 : .86) : (dark ? .80 : .90)),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(radius), bottom: Radius.circular(radius)),
-            border: Border.all(color: cs.onSurface.withValues(alpha: ultra ? .16 : .12), width: 1.1),
-            boxShadow: floatingBar ? [
-              BoxShadow(color: Colors.black.withValues(alpha: dark ? .12 : .06), blurRadius: ultra ? 22 : 18, offset: const Offset(0, 6)),
-            ] : const [],
+            color: disabled
+                ? cs.surfaceContainerHigh
+                : surface.withValues(alpha: ultra ? (dark ? .88 : .90) : .94),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: outline, width: .9),
+            boxShadow: floatingBar
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: dark ? .20 : .075),
+                      blurRadius: ultra ? 20 : 14,
+                      offset: const Offset(0, 5),
+                    ),
+                    if (ultra)
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: dark ? .045 : .65),
+                        blurRadius: 1,
+                        offset: const Offset(0, -1),
+                      ),
+                  ]
+                : const [],
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final width = constraints.maxWidth / 3;
+              final width = constraints.maxWidth / items.length;
               return Stack(
-                alignment: Alignment.center,
+                fit: StackFit.expand,
                 children: [
-                  AnimatedPositioned(
-                    duration: Duration(milliseconds: animate ? 420 : 0),
-                    curve: Curves.easeOutBack,
-                    left: index * width + 6,
-                    top: 5,
-                    bottom: 5,
-                    width: width - 12,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: disabled ? cs.primary : cs.primary.withValues(alpha: dark ? .28 : .12),
-                              borderRadius: BorderRadius.circular(28),
-                              border: Border.all(color: cs.primary.withValues(alpha: dark ? .12 : .04)),
+                  // A restrained top-edge reflection keeps the outer pane readable
+                  // instead of turning the whole dock into a purple blur.
+                  if (!disabled)
+                    Positioned(
+                      left: 1,
+                      right: 1,
+                      top: 1,
+                      height: 15,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(radius),
                             ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: List.generate(items.length, (i) => Expanded(
-                      child: Semantics(
-                        button: true,
-                        selected: index == i,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(28),
-                          onTap: () => onSelect(i),
-                          child: SizedBox(
-                            height: 88,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AnimatedScale(
-                                  scale: index == i ? 1.08 : 1,
-                                  duration: Duration(milliseconds: animate ? 220 : 0),
-                                  child: Icon(index == i ? items[i].selected : items[i].icon, size: 34, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(items[i].label, style: TextStyle(fontSize: 17, fontWeight: index == i ? FontWeight.w600 : FontWeight.w500, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant)),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.white.withValues(alpha: dark ? .09 : .52),
+                                Colors.white.withValues(alpha: 0),
                               ],
                             ),
                           ),
                         ),
                       ),
-                    )),
+                    ),
+                  AnimatedPositioned(
+                    duration: Duration(milliseconds: animate ? 430 : 0),
+                    curve: Curves.easeOutBack,
+                    left: index * width + 4,
+                    top: 4,
+                    bottom: 4,
+                    width: width - 8,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: disabled
+                                ? [cs.primary, cs.primary]
+                                : dark
+                                    ? [
+                                        cs.primary.withValues(alpha: .42),
+                                        cs.primary.withValues(alpha: .26),
+                                      ]
+                                    : [
+                                        const Color(0xFFE5F0FF),
+                                        const Color(0xFFD5E6FF),
+                                      ],
+                          ),
+                          border: Border.all(
+                            color: disabled
+                                ? cs.primary.withValues(alpha: .2)
+                                : cs.primary.withValues(alpha: dark ? .38 : .22),
+                            width: .8,
+                          ),
+                          boxShadow: disabled
+                              ? const []
+                              : [
+                                  BoxShadow(
+                                    color: cs.primary.withValues(alpha: dark ? .10 : .08),
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                        ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (!disabled)
+                              Align(
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  height: 9,
+                                  margin: const EdgeInsets.symmetric(horizontal: 7),
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(20),
+                                    ),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: dark ? .20 : .85),
+                                        Colors.white.withValues(alpha: 0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                height: 1,
+                                color: Colors.white.withValues(alpha: dark ? .10 : .58),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: List.generate(items.length, (i) {
+                      final selected = index == i;
+                      final activeColor = disabled
+                          ? cs.onPrimary
+                          : (dark ? const Color(0xFFF4F6FF) : const Color(0xFF1769D2));
+                      final idleColor = dark
+                          ? const Color(0xFFD0D1DB)
+                          : const Color(0xFF555D70);
+                      return Expanded(
+                        child: Semantics(
+                          button: true,
+                          selected: selected,
+                          label: items[i].label,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(24),
+                            onTap: () => onSelect(i),
+                            child: SizedBox(
+                              height: barHeight,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  AnimatedScale(
+                                    scale: selected ? 1.04 : 1,
+                                    duration: Duration(milliseconds: animate ? 200 : 0),
+                                    child: Icon(
+                                      selected ? items[i].selected : items[i].icon,
+                                      size: 27,
+                                      color: selected ? activeColor : idleColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    items[i].label,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      height: 1.15,
+                                      letterSpacing: .1,
+                                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                      color: selected ? activeColor : idleColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ],
               );
