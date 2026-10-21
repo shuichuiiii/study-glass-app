@@ -15,7 +15,8 @@ class _StudyGlassAppState extends State<StudyGlassApp> {
   ThemeMode mode = ThemeMode.system;
   bool dynamicColor = true;
   bool motion = true;
-  String glass = 'standard';
+  bool floatingBar = true;
+  String glass = 'ultra';
 
   @override
   void initState() {
@@ -30,7 +31,8 @@ class _StudyGlassAppState extends State<StudyGlassApp> {
       mode = ThemeMode.values[p.getInt('themeMode') ?? 0];
       dynamicColor = p.getBool('dynamicColor') ?? true;
       motion = p.getBool('motion') ?? true;
-      glass = p.getString('glassMode') ?? 'standard';
+      floatingBar = p.getBool('floatingBar') ?? true;
+      glass = p.getString('glassMode') ?? 'ultra';
     });
   }
 
@@ -61,11 +63,13 @@ class _StudyGlassAppState extends State<StudyGlassApp> {
               mode: mode,
               dynamicColor: dynamicColor,
               motion: motion,
+              floatingBar: floatingBar,
               glass: glass,
               onMode: (v) { setState(() => mode = v); _save('themeMode', v.index); },
               onDynamicColor: (v) { setState(() => dynamicColor = v); _save('dynamicColor', v); },
               onMotion: (v) { setState(() => motion = v); _save('motion', v); },
-              onGlass: (v) { setState(() => glass = v); _save('glassMode', v); },
+              onFloatingBar: (v) { setState(() => floatingBar = v); _save('floatingBar', v); },
+              onGlass: (v) { setState(() => glass = v); _save('glassMode', v); }
             ),
           );
         },
@@ -73,14 +77,16 @@ class _StudyGlassAppState extends State<StudyGlassApp> {
 }
 
 class StudyHome extends StatefulWidget {
-  const StudyHome({super.key, required this.mode, required this.dynamicColor, required this.motion, required this.glass, required this.onMode, required this.onDynamicColor, required this.onMotion, required this.onGlass});
+  const StudyHome({super.key, required this.mode, required this.dynamicColor, required this.motion, required this.floatingBar, required this.glass, required this.onMode, required this.onDynamicColor, required this.onMotion, required this.onFloatingBar, required this.onGlass});
   final ThemeMode mode;
   final bool dynamicColor;
   final bool motion;
+  final bool floatingBar;
   final String glass;
   final ValueChanged<ThemeMode> onMode;
   final ValueChanged<bool> onDynamicColor;
   final ValueChanged<bool> onMotion;
+  final ValueChanged<bool> onFloatingBar;
   final ValueChanged<String> onGlass;
 
   @override
@@ -99,10 +105,12 @@ class _StudyHomeState extends State<StudyHome> {
         mode: widget.mode,
         dynamicColor: widget.dynamicColor,
         motion: widget.motion,
+        floatingBar: widget.floatingBar,
         glass: widget.glass,
         onMode: widget.onMode,
         onDynamicColor: widget.onDynamicColor,
         onMotion: widget.onMotion,
+        onFloatingBar: widget.onFloatingBar,
         onGlass: widget.onGlass,
       ),
     ];
@@ -123,15 +131,15 @@ class _StudyHomeState extends State<StudyHome> {
             ),
           ),
           Positioned(
-            left: 16, right: 16, bottom: 10,
-            child: SafeArea(
-              top: false,
-              child: LiquidDock(
-                index: tab,
-                glass: widget.glass,
-                animate: widget.motion,
-                onSelect: (i) => setState(() => tab = i),
-              ),
+            left: widget.floatingBar ? 16 : 0,
+            right: widget.floatingBar ? 16 : 0,
+            bottom: widget.floatingBar ? MediaQuery.paddingOf(context).bottom + 10 : 0,
+            child: LiquidDock(
+              index: tab,
+              glass: widget.glass,
+              floatingBar: widget.floatingBar,
+              animate: widget.motion,
+              onSelect: (i) => setState(() => tab = i),
             ),
           ),
         ],
@@ -291,14 +299,16 @@ class _VocabularyPageState extends State<VocabularyPage> {
 }
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, required this.mode, required this.dynamicColor, required this.motion, required this.glass, required this.onMode, required this.onDynamicColor, required this.onMotion, required this.onGlass});
+  const SettingsPage({super.key, required this.mode, required this.dynamicColor, required this.motion, required this.floatingBar, required this.glass, required this.onMode, required this.onDynamicColor, required this.onMotion, required this.onFloatingBar, required this.onGlass});
   final ThemeMode mode;
   final bool dynamicColor;
   final bool motion;
+  final bool floatingBar;
   final String glass;
   final ValueChanged<ThemeMode> onMode;
   final ValueChanged<bool> onDynamicColor;
   final ValueChanged<bool> onMotion;
+  final ValueChanged<bool> onFloatingBar;
   final ValueChanged<String> onGlass;
 
   @override
@@ -325,14 +335,25 @@ class SettingsPage extends StatelessWidget {
           ),
           Card(child: SwitchListTile(value: dynamicColor, onChanged: onDynamicColor, title: const Text('动态主题色'), subtitle: const Text('支持的 Android 设备可使用系统配色'), secondary: const Icon(Icons.color_lens_outlined))),
           const SizedBox(height: 20),
-          Text('导航与动效', style: theme.textTheme.titleLarge),
+          Text('导航栏样式', style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
           Card(
             child: Column(
               children: [
-                RadioListTile<String>(value: 'off', groupValue: glass, onChanged: (v) { if (v != null) onGlass(v); }, title: const Text('关闭玻璃效果')),
-                RadioListTile<String>(value: 'standard', groupValue: glass, onChanged: (v) { if (v != null) onGlass(v); }, title: const Text('标准液态玻璃'), subtitle: const Text('背景模糊、半透明底座和滑动镜片')),
-                RadioListTile<String>(value: 'ultra', groupValue: glass, onChanged: (v) { if (v != null) onGlass(v); }, title: const Text('增强玻璃效果')),
+                RadioListTile<bool>(value: true, groupValue: floatingBar, onChanged: (v) { if (v != null) onFloatingBar(v); }, title: const Text('悬浮'), subtitle: const Text('圆角底栏与页面保持间距')),
+                RadioListTile<bool>(value: false, groupValue: floatingBar, onChanged: (v) { if (v != null) onFloatingBar(v); }, title: const Text('贴底'), subtitle: const Text('底栏贴合屏幕底部')),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text('液态玻璃', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                RadioListTile<String>(value: 'off', groupValue: glass, onChanged: (v) { if (v != null) onGlass(v); }, title: const Text('关闭')),
+                RadioListTile<String>(value: 'standard', groupValue: glass, onChanged: (v) { if (v != null) onGlass(v); }, title: const Text('标准')),
+                RadioListTile<String>(value: 'ultra', groupValue: glass, onChanged: (v) { if (v != null) onGlass(v); }, title: const Text('极致'), subtitle: const Text('加强背景透射、镜面高光、边缘反光与液态切换')),
                 SwitchListTile(value: motion, onChanged: onMotion, title: const Text('页面过渡动画')),
               ],
             ),
@@ -346,9 +367,10 @@ class SettingsPage extends StatelessWidget {
 }
 
 class LiquidDock extends StatelessWidget {
-  const LiquidDock({super.key, required this.index, required this.glass, required this.animate, required this.onSelect});
+  const LiquidDock({super.key, required this.index, required this.glass, required this.floatingBar, required this.animate, required this.onSelect});
   final int index;
   final String glass;
+  final bool floatingBar;
   final bool animate;
   final ValueChanged<int> onSelect;
   static const items = <({IconData icon, IconData selected, String label})>[
@@ -362,18 +384,23 @@ class LiquidDock extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final disabled = glass == 'off';
-    final blur = glass == 'ultra' ? 28.0 : 18.0;
+    final ultra = glass == 'ultra';
+    final blur = ultra ? 36.0 : 18.0;
+    final radius = floatingBar ? 34.0 : 0.0;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(34),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(radius), bottom: Radius.circular(radius)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: disabled ? 0 : blur, sigmaY: disabled ? 0 : blur),
         child: Container(
           height: 76,
           decoration: BoxDecoration(
-            color: disabled ? cs.surfaceContainerHigh : cs.surface.withValues(alpha: dark ? .66 : .72),
-            borderRadius: BorderRadius.circular(34),
-            border: Border.all(color: cs.onSurface.withValues(alpha: .12)),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .10), blurRadius: 26, offset: const Offset(0, 9))],
+            color: disabled ? cs.surfaceContainerHigh : cs.surface.withValues(alpha: ultra ? (dark ? .30 : .22) : (dark ? .66 : .72)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(radius), bottom: Radius.circular(radius)),
+            border: Border.all(color: cs.onSurface.withValues(alpha: ultra ? .20 : .12)),
+            boxShadow: floatingBar ? [
+              BoxShadow(color: Colors.black.withValues(alpha: dark ? .24 : .12), blurRadius: ultra ? 34 : 26, offset: const Offset(0, 10)),
+              if (ultra) BoxShadow(color: cs.primary.withValues(alpha: .12), blurRadius: 28, spreadRadius: -8),
+            ] : const [],
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -388,16 +415,43 @@ class LiquidDock extends StatelessWidget {
                     top: 6,
                     bottom: 6,
                     width: width - 12,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [cs.primary.withValues(alpha: .88), cs.primary.withValues(alpha: .62)],
-                        ),
-                        border: Border.all(color: Colors.white.withValues(alpha: .35)),
-                        boxShadow: [BoxShadow(color: cs.primary.withValues(alpha: .25), blurRadius: 15, offset: const Offset(0, 4))],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (!disabled) BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: ultra ? 22 : 10, sigmaY: ultra ? 22 : 10),
+                            child: const SizedBox.expand(),
+                          ),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: disabled
+                                  ? LinearGradient(colors: [cs.primary, cs.primary.withValues(alpha: .82)])
+                                  : LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: ultra
+                                          ? [Colors.white.withValues(alpha: dark ? .24 : .62), cs.primary.withValues(alpha: dark ? .26 : .20), Colors.white.withValues(alpha: dark ? .08 : .30)]
+                                          : [Colors.white.withValues(alpha: .30), cs.primary.withValues(alpha: .20)],
+                                    ),
+                              border: Border.all(color: Colors.white.withValues(alpha: ultra ? .72 : .40), width: ultra ? 1.2 : 1),
+                              boxShadow: [
+                                BoxShadow(color: cs.primary.withValues(alpha: ultra ? .22 : .12), blurRadius: ultra ? 24 : 15, offset: const Offset(0, 4)),
+                                if (ultra) BoxShadow(color: Colors.white.withValues(alpha: dark ? .08 : .25), blurRadius: 5, offset: const Offset(0, -2)),
+                              ],
+                            ),
+                          ),
+                          if (ultra && !disabled) Positioned(
+                            left: 8, right: 8, top: 1, height: 16,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.white.withValues(alpha: dark ? .28 : .62), Colors.white.withValues(alpha: 0)]),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -417,10 +471,10 @@ class LiquidDock extends StatelessWidget {
                                 AnimatedScale(
                                   scale: index == i ? 1.08 : 1,
                                   duration: Duration(milliseconds: animate ? 220 : 0),
-                                  child: Icon(index == i ? items[i].selected : items[i].icon, color: index == i ? cs.onPrimary : cs.onSurfaceVariant),
+                                  child: Icon(index == i ? items[i].selected : items[i].icon, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant),
                                 ),
                                 const SizedBox(height: 3),
-                                Text(items[i].label, style: TextStyle(fontSize: 11, fontWeight: index == i ? FontWeight.w700 : FontWeight.w500, color: index == i ? cs.onPrimary : cs.onSurfaceVariant)),
+                                Text(items[i].label, style: TextStyle(fontSize: 11, fontWeight: index == i ? FontWeight.w700 : FontWeight.w500, color: index == i ? (disabled ? cs.onPrimary : (dark ? Colors.white : cs.primary)) : cs.onSurfaceVariant)),
                               ],
                             ),
                           ),
