@@ -1,4 +1,4 @@
-name: Build Android debug APK
+name: Build Android APKs
 
 on:
   workflow_dispatch:
@@ -30,9 +30,17 @@ jobs:
         run: flutter pub get
       - name: Build debug APK
         run: flutter build apk --debug
-      - name: Upload APK artifact
+      - name: Upload debug APK (large, includes debug symbols)
         uses: actions/upload-artifact@v4
         with:
           name: study-glass-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+      - name: Build optimized release APKs split by CPU architecture
+        run: flutter build apk --release --split-per-abi
+      - name: Upload optimized arm64 release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: study-glass-release-arm64
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           if-no-files-found: error
