@@ -404,18 +404,16 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
     upperBound: 1,
   );
   double? _dragX;
+  int? _hoverIndex;
+
+  int _indexAt(double dx, double width) {
+    return (dx / width).floor().clamp(0, LiquidDock.items.length - 1);
+  }
 
   @override
   void dispose() {
     _press.dispose();
     super.dispose();
-  }
-
-  void _selectAt(double dx, double width) {
-    final next = (dx / width * LiquidDock.items.length)
-        .floor()
-        .clamp(0, LiquidDock.items.length - 1);
-    if (next != widget.index) widget.onSelect(next);
   }
 
   @override
@@ -440,13 +438,13 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
     final content = LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth / LiquidDock.items.length;
-        final lensIndex = _dragX == null
-            ? widget.index.toDouble()
-            : (_dragX! / width - 0.5).clamp(0.0, LiquidDock.items.length - 1.0);
+        final previewIndex = _dragX == null ? widget.index : (_hoverIndex ?? widget.index);
+        final lensIndex = previewIndex.toDouble();
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onHorizontalDragStart: (details) {
             _dragX = details.localPosition.dx;
+            _hoverIndex = _indexAt(_dragX!, width);
             if (widget.animate) _press.forward();
             setState(() {});
           },
@@ -455,16 +453,27 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
             // coordinate space. Do not accumulate delta: the lens and hit
             // targets must share the same coordinate system.
             _dragX = details.localPosition.dx.clamp(0.0, constraints.maxWidth);
-            _selectAt(_dragX!, width);
-            setState(() {});
+            final nextHover = _indexAt(_dragX!, width);
+            if (nextHover != _hoverIndex) {
+              _hoverIndex = nextHover;
+              setState(() {});
+            }
           },
           onHorizontalDragEnd: (_) {
+            final destination = _hoverIndex;
             _dragX = null;
+            _hoverIndex = null;
             _press.reverse();
             setState(() {});
+            // Match FlClash: keep the current page while dragging; commit only
+            // after the finger is released over a destination.
+            if (destination != null && destination != widget.index) {
+              widget.onSelect(destination);
+            }
           },
           onHorizontalDragCancel: () {
             _dragX = null;
+            _hoverIndex = null;
             _press.reverse();
             setState(() {});
           },
@@ -475,8 +484,8 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
                 fit: StackFit.expand,
                 children: [
                     AnimatedPositioned(
-                      duration: Duration(milliseconds: widget.animate && _dragX == null ? 430 : 0),
-                      curve: Curves.easeOutBack,
+                      duration: Duration(milliseconds: widget.animate ? (_dragX == null ? 380 : 105) : 0),
+                      curve: Curves.easeOutCubic,
                       left: lensIndex * width + 4,
                       top: 4 - _press.value * 2,
                       bottom: 4 - _press.value * 2,
@@ -505,13 +514,73 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
                                     offset: Offset(0, 2 + _press.value * 2),
                                   ),
                                 ],
-                                child: const SizedBox.expand(),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(30),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.white.withValues(alpha: dark ? .22 : .42),
+                                            Colors.white.withValues(alpha: dark ? .06 : .14),
+                                            cs.primary.withValues(alpha: dark ? .09 : .035),
+                                            Colors.black.withValues(alpha: dark ? .16 : .055),
+                                          ],
+                                          stops: const [0, .22, .72, 1],
+                                        ),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: dark ? .30 : .62),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: 10,
+                                      right: 10,
+                                      top: 1.2,
+                                      height: 1.4,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(4),
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.white.withValues(alpha: 0),
+                                              Colors.white.withValues(alpha: dark ? .72 : .94),
+                                              Colors.white.withValues(alpha: 0),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: 8,
+                                      right: 8,
+                                      bottom: 1,
+                                      height: 2,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(4),
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.black.withValues(alpha: 0),
+                                              Colors.black.withValues(alpha: dark ? .28 : .10),
+                                              Colors.black.withValues(alpha: 0),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                       ),
                     ),
                     Row(
                       children: List.generate(LiquidDock.items.length, (i) {
-                        final selected = widget.index == i;
+                        final selected = previewIndex == i;
                         final activeColor = disabled
                             ? cs.onPrimary
                             : (dark ? const Color(0xFFF4F6FF) : const Color(0xFF1769D2));
