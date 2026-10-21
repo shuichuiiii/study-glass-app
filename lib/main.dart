@@ -439,7 +439,12 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
       builder: (context, constraints) {
         final width = constraints.maxWidth / LiquidDock.items.length;
         final previewIndex = _dragX == null ? widget.index : (_hoverIndex ?? widget.index);
-        final lensIndex = previewIndex.toDouble();
+        // While dragging, the glass lens follows the finger continuously.
+        // The tab preview may change at boundaries, but the lens must not snap
+        // onto each tab; only release commits the page selection.
+        final lensLeft = _dragX == null
+            ? widget.index * width + 4
+            : (_dragX! - (width - 8) / 2).clamp(4.0, constraints.maxWidth - width + 4);
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onHorizontalDragStart: (details) {
@@ -484,9 +489,9 @@ class _LiquidDockState extends State<LiquidDock> with SingleTickerProviderStateM
                 fit: StackFit.expand,
                 children: [
                     AnimatedPositioned(
-                      duration: Duration(milliseconds: widget.animate ? (_dragX == null ? 380 : 105) : 0),
+                      duration: Duration(milliseconds: !widget.animate ? 0 : (_dragX == null ? 380 : 0)),
                       curve: Curves.easeOutCubic,
-                      left: lensIndex * width + 4,
+                      left: lensLeft,
                       top: 4 - _press.value * 2,
                       bottom: 4 - _press.value * 2,
                       width: width - 8,
