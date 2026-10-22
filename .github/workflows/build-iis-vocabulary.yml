@@ -87,12 +87,12 @@ jobs:
                 if tag in tags: books[book_id].append(item)
               frq=item['frequency']['frq']
               if frq and frq>0:
-                if frq<=1000: books['coca-1k'].append(item)
-                elif frq<=3000: books['coca-3k'].append(item)
-                elif frq<=5000: books['coca-5k'].append(item)
-                elif frq<=10000: books['coca-10k'].append(item)
+                if frq<=1000: books['frequency-1k'].append(item)
+                elif frq<=3000: books['frequency-3k'].append(item)
+                elif frq<=5000: books['frequency-5k'].append(item)
+                elif frq<=10000: books['frequency-10k'].append(item)
           meta={v[0]:v[1] for v in tag_map.values()}
-          meta.update({'coca-1k':'高频词 1–1000','coca-3k':'词频 1001–3000','coca-5k':'词频 3001–5000','coca-10k':'词频 5001–10000'})
+          meta.update({'frequency-1k':'词频排名 1–1000','frequency-3k':'词频排名 1001–3000','frequency-5k':'词频排名 3001–5000','frequency-10k':'词频排名 5001–10000'})
           catalog=[]
           for book_id,items in books.items():
             items.sort(key=lambda x:x['word'].casefold())
@@ -120,7 +120,7 @@ jobs:
           每条词目包含 word、phonetic、pos、definition、translation、tags、frequency、forms、examples、audio、source。缺失字段留空。
 
           考试词书由 ECDICT 自带 tag 字段筛选，覆盖率取决于源数据，不代表官方考试大纲的完整权威版本。
-          coca-* 文件按 ECDICT 的 frq 字段分段。它是来源数据中的频率排名字段，未经独立验证，不应宣传为 COCA 官方词表。
+          frequency-* 文件按 ECDICT 的 frq 字段分段。它是来源数据中的频率排名字段，未经独立验证，不应宣传为 COCA 官方词表。
           ECDICT 例句字段可能缺失；本版本不会编造例句或例句翻译。
           sources/ecdict-full.csv.gz 是完整原始 CSV 的压缩副本；sources/open-english-wordnet-2025-json.zip 是英文释义/例句的补充源数据，目前单独保存，尚未自动合并，避免错误匹配词义。
 
