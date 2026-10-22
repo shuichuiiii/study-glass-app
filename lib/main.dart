@@ -355,7 +355,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 8),
           const Card(
             child: ListTile(
-              leading: Icon(Icons.bottom_navigation),
+              leading: Icon(Icons.navigation_rounded),
               title: Text('Material BottomNavigationBar'),
               subtitle: Text('经典固定底栏，当前包含学习、词库、设置三个入口。'),
             ),
