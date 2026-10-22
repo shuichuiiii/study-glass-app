@@ -234,15 +234,8 @@ class _VocabularyPageState extends State<VocabularyPage> {
   final Set<String> expanded = {'考试/学校词书'};
   final Set<String> selected = {};
   final groups = const <({String title, String subtitle, List<String> books})>[
-    (title: '考试/学校词书', subtitle: '按考试大纲与教材分类', books: ['中考', '高考', '大学英语四级（CET-4）', '大学英语六级（CET-6）', '考研', '专四', '专八', '雅思 IELTS', '托福 TOEFL', 'SAT', 'GRE', 'GMAT', 'BEC']),
-    (title: 'CEFR 难度分级', subtitle: '欧洲语言共同参考框架', books: ['A1 入门', 'A2 初级', 'B1 中级', 'B2 中高级', 'C1 高级', 'C2 熟练']),
-    (title: 'COCA 词频分级', subtitle: '按美国当代英语语料库词频划分', books: ['高频核心词', '词频 1–1000', '词频 1001–3000', '词频 3001–5000', '词频 5001–10000', '扩展词汇']),
-    (title: '专业/领域词表', subtitle: '按学科与使用场景分类', books: ['通用核心词（NGSL）', '口语（NGSL-S）', '学术（NAWL）', '商务（BSL）', '职场（TSL）', '医学（MOEL）', '计算机（TWLRA/CS）']),
-    (title: '更多相册', subtitle: '扩展主题词汇', books: ['日常生活', '旅行出行', '食物与烹饪', '科技与互联网', '文化与艺术']),
-    (title: '媒体类型', subtitle: '按内容场景学习', books: ['新闻英语', '影视英语', '播客与听力', '社交媒体']),
-    (title: '地点', subtitle: '按地点与场景学习', books: ['机场与航班', '酒店与住宿', '餐厅与购物', '学校与校园', '办公室']),
-    (title: '智能分类', subtitle: '后续可按词频与学习记录生成', books: ['我的生词', '易混词', '常错词', '已掌握词汇']),
-    (title: '其他', subtitle: '自定义与导入', books: ['本地导入词表', '自建词表']),
+    (title: '考试/学校词书', subtitle: '基于 ECDICT 公开标签筛选，非官方完整大纲', books: ['中考词汇', '高考词汇', '大学英语四级（CET-4）', '大学英语六级（CET-6）', '考研词汇', '雅思 IELTS', '托福 TOEFL', 'GRE']),
+    (title: '词频排名', subtitle: '依据 ECDICT 的 frq 字段，不是官方 COCA 词表', books: ['词频排名 1–1000', '词频排名 1001–3000', '词频排名 3001–5000', '词频排名 5001–10000']),
   ];
 
   @override
@@ -269,7 +262,7 @@ class _VocabularyPageState extends State<VocabularyPage> {
           const SizedBox(height: 28),
           Text('词库资源', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 6),
-          Text('按考试、难度、词频和专业领域浏览词书', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+          Text('仅显示当前数据包实际生成的词书', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 18),
           for (final group in groups) Card(
             margin: const EdgeInsets.only(bottom: 10),
@@ -314,13 +307,8 @@ class _VocabularyPageState extends State<VocabularyPage> {
   IconData _groupIcon(String title) {
     if (title.contains('考试')) return Icons.school_outlined;
     if (title.contains('CEFR')) return Icons.stacked_bar_chart_rounded;
-    if (title.contains('COCA')) return Icons.trending_up_rounded;
-    if (title.contains('专业')) return Icons.work_outline_rounded;
-    if (title.contains('媒体')) return Icons.perm_media_outlined;
-    if (title.contains('地点')) return Icons.place_outlined;
-    if (title.contains('智能')) return Icons.auto_awesome_outlined;
-    if (title.contains('其他')) return Icons.more_horiz_rounded;
-    return Icons.collections_bookmark_outlined;
+    if (title.contains('词频')) return Icons.trending_up_rounded;
+        return Icons.collections_bookmark_outlined;
   }
 
   static void _showMessage(BuildContext context, String message) {
