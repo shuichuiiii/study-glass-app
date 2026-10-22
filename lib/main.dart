@@ -231,84 +231,100 @@ class VocabularyPage extends StatefulWidget {
 }
 
 class _VocabularyPageState extends State<VocabularyPage> {
-  final controller = TextEditingController();
-  final Set<String> saved = <String>{};
-  final words = const <({String word, String meaning, String part})>[
-    (word: 'abandon', meaning: '放弃；抛弃', part: '动词'),
-    (word: 'benefit', meaning: '益处；受益', part: '名词 / 动词'),
-    (word: 'curious', meaning: '好奇的', part: '形容词'),
-    (word: 'discover', meaning: '发现', part: '动词'),
-    (word: 'essential', meaning: '必要的；本质的', part: '形容词'),
-    (word: 'focus', meaning: '专注；焦点', part: '名词 / 动词'),
+  final Set<String> expanded = {'考试/学校词书'};
+  final Set<String> selected = {};
+  final groups = const <({String title, String subtitle, List<String> books})>[
+    (title: '考试/学校词书', subtitle: '按考试大纲与教材分类', books: ['中考', '高考', '大学英语四级（CET-4）', '大学英语六级（CET-6）', '考研', '专四', '专八', '雅思 IELTS', '托福 TOEFL', 'SAT', 'GRE', 'GMAT', 'BEC']),
+    (title: 'CEFR 难度分级', subtitle: '欧洲语言共同参考框架', books: ['A1 入门', 'A2 初级', 'B1 中级', 'B2 中高级', 'C1 高级', 'C2 熟练']),
+    (title: 'COCA 词频分级', subtitle: '按美国当代英语语料库词频划分', books: ['高频核心词', '词频 1–1000', '词频 1001–3000', '词频 3001–5000', '词频 5001–10000', '扩展词汇']),
+    (title: '专业/领域词表', subtitle: '按学科与使用场景分类', books: ['通用核心词（NGSL）', '口语（NGSL-S）', '学术（NAWL）', '商务（BSL）', '职场（TSL）', '医学（MOEL）', '计算机（TWLRA/CS）']),
+    (title: '更多相册', subtitle: '扩展主题词汇', books: ['日常生活', '旅行出行', '食物与烹饪', '科技与互联网', '文化与艺术']),
+    (title: '媒体类型', subtitle: '按内容场景学习', books: ['新闻英语', '影视英语', '播客与听力', '社交媒体']),
+    (title: '地点', subtitle: '按地点与场景学习', books: ['机场与航班', '酒店与住宿', '餐厅与购物', '学校与校园', '办公室']),
+    (title: '智能分类', subtitle: '后续可按词频与学习记录生成', books: ['我的生词', '易混词', '常错词', '已掌握词汇']),
+    (title: '其他', subtitle: '自定义与导入', books: ['本地导入词表', '自建词表']),
   ];
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final query = controller.text.toLowerCase();
-    final filtered = words.where((w) => '${w.word} ${w.meaning}'.toLowerCase().contains(query)).toList();
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(22, 26, 22, 120),
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 110),
         children: [
-          Text('我的词库', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          Text('整理词汇，让每一次积累都有意义。', style: TextStyle(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 20),
-          TextField(
-            controller: controller,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: '搜索单词或释义',
-              prefixIcon: const Icon(Icons.search_rounded),
-              filled: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide.none),
+          Row(children: [
+            Expanded(child: Text('词库', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800))),
+            IconButton(onPressed: () => _showMessage(context, '词库搜索将在接入词库数据后启用。'), icon: const Icon(Icons.search_rounded, size: 30)),
+          ]),
+          const SizedBox(height: 12),
+          Container(
+            height: 58, padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest.withValues(alpha: .65), borderRadius: BorderRadius.circular(22)),
+            child: Row(children: [
+              Expanded(child: _languageChip('英语', true)),
+              Expanded(child: _languageChip('韩语', false)),
+            ]),
+          ),
+          const SizedBox(height: 28),
+          Text('词库资源', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          Text('按考试、难度、词频和专业领域浏览词书', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+          const SizedBox(height: 18),
+          for (final group in groups) Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: cs.outlineVariant.withValues(alpha: .55))),
+            child: Theme(
+              data: theme.copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                key: PageStorageKey(group.title),
+                initiallyExpanded: expanded.contains(group.title),
+                onExpansionChanged: (open) => setState(() { if (open) { expanded.add(group.title); } else { expanded.remove(group.title); } }),
+                leading: CircleAvatar(radius: 18, backgroundColor: cs.surfaceContainerHighest, child: Icon(_groupIcon(group.title), size: 20, color: cs.onSurfaceVariant)),
+                title: Text(group.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                subtitle: Text(group.subtitle, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                trailing: Icon(expanded.contains(group.title) ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 28),
+                children: [
+                  for (final book in group.books) ListTile(
+                    dense: false,
+                    contentPadding: const EdgeInsets.only(left: 24, right: 16),
+                    title: Text(book, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(selected.contains(book) ? '已加入预览清单' : '词条与下载状态待接入数据源', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                    trailing: Icon(selected.contains(book) ? Icons.check_circle_rounded : Icons.chevron_right_rounded, color: selected.contains(book) ? const Color(0xFF439B68) : cs.onSurfaceVariant),
+                    onTap: () => setState(() { if (!selected.add(book)) selected.remove(book); }),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 18),
-          Text('全部单词 · ${filtered.length} 条', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          ...filtered.map((w) => Card(
-            child: ListTile(
-              title: Text(w.word, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${w.meaning} · ${w.part}'),
-              trailing: IconButton(
-                onPressed: () => setState(() { if (!saved.add(w.word)) saved.remove(w.word); }),
-                icon: Icon(saved.contains(w.word) ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, color: saved.contains(w.word) ? cs.primary : null),
-              ),
-              onTap: () => showModalBottomSheet<void>(
-                context: context,
-                showDragHandle: true,
-                builder: (ctx) => SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(w.word, style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        Text(w.meaning, style: Theme.of(ctx).textTheme.titleLarge),
-                        const SizedBox(height: 6),
-                        Text('词性：${w.part}'),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          )),
+          const SizedBox(height: 8),
+          Text('说明：当前为界面预览，列表名称用于展示分类结构；并不代表词书已经下载。', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ],
       ),
     );
+  }
+
+  Widget _languageChip(String label, bool isEnglish) => Container(
+    alignment: Alignment.center,
+    decoration: BoxDecoration(color: isEnglish ? Theme.of(context).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(18)),
+    child: Text(label, style: TextStyle(fontSize: 17, fontWeight: isEnglish ? FontWeight.w800 : FontWeight.w500)),
+  );
+
+  IconData _groupIcon(String title) {
+    if (title.contains('考试')) return Icons.school_outlined;
+    if (title.contains('CEFR')) return Icons.stacked_bar_chart_rounded;
+    if (title.contains('COCA')) return Icons.trending_up_rounded;
+    if (title.contains('专业')) return Icons.work_outline_rounded;
+    if (title.contains('媒体')) return Icons.perm_media_outlined;
+    if (title.contains('地点')) return Icons.place_outlined;
+    if (title.contains('智能')) return Icons.auto_awesome_outlined;
+    if (title.contains('其他')) return Icons.more_horiz_rounded;
+    return Icons.collections_bookmark_outlined;
+  }
+
+  static void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
