@@ -132,30 +132,28 @@ class _StudyHomeState extends State<StudyHome> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: tab,
-        onTap: (index) => setState(() => tab = index),
-        type: BottomNavigationBarType.fixed,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: tab,
+        onDestinationSelected: (index) => setState(() => tab = index),
+        height: 78,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.auto_stories_outlined),
-            activeIcon: Icon(Icons.auto_stories_rounded),
+        indicatorColor: const Color(0xFFDDE1FF),
+        elevation: 2,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school_rounded),
             label: '学习',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.library_books_outlined),
-            activeIcon: Icon(Icons.library_books_rounded),
+          NavigationDestination(
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book_rounded),
             label: '词库',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.tune_rounded),
-            activeIcon: Icon(Icons.tune_rounded),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings_rounded),
             label: '设置',
           ),
         ],
