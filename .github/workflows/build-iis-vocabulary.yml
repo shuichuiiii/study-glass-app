@@ -20,6 +20,7 @@ jobs:
           set -euo pipefail
           mkdir -p package/books package/sources package/docs
           curl -fL --retry 3 https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv -o /tmp/ecdict.csv
+          curl -fL --retry 3 https://www.newgeneralservicelist.com/s/NGSL_12_stats.csv -o /tmp/ngsl.csv
           curl -fL --retry 3 https://raw.githubusercontent.com/skywind3000/ECDICT/master/LICENSE -o package/sources/ECDICT-LICENSE.txt
           curl -fL --retry 3 https://raw.githubusercontent.com/skywind3000/ECDICT/master/README.md -o package/sources/ECDICT-README.md
           curl -fL --retry 3 https://en-word.net/static/english-wordnet-2025-json.zip -o package/sources/open-english-wordnet-2025-json.zip
@@ -77,12 +78,12 @@ jobs:
               'forms':val('exchange'),'examples':examples,'audio':val('audio'),
               'source':'ECDICT'
             }
-          books=defaultdict(list); total=0
+          books=defaultdict(list); total=0; dictionary_by_word={}
           with open('/tmp/ecdict.csv',encoding='utf-8-sig',newline='') as f:
             reader=csv.DictReader(f)
             for row in reader:
               if not (row.get('word') or '').strip(): continue
-              item=clean(row); total+=1; tags=set(item['tags'])
+              item=clean(row); total+=1; tags=set(item['tags']); dictionary_by_word.setdefault(item['word'].casefold(),item)
               for tag,(book_id,title) in tag_map.items():
                 if tag in tags: books[book_id].append(item)
               frq=item['frequency']['frq']
@@ -91,8 +92,28 @@ jobs:
                 elif frq<=3000: books['frequency-3k'].append(item)
                 elif frq<=5000: books['frequency-5k'].append(item)
                 elif frq<=10000: books['frequency-10k'].append(item)
+          ngsl_items=[]
+          with open('/tmp/ngsl.csv',encoding='utf-8-sig',newline='') as nf:
+            nr=csv.DictReader(nf)
+            for nrw in nr:
+              lower={str(k).strip().casefold():(str(v).strip() if v is not None else '') for k,v in nrw.items() if k}
+              word=lower.get('lemma') or lower.get('word') or lower.get('headword')
+              if not word: continue
+              rank=lower.get('sfi rank') or lower.get('rank') or lower.get('sfi_rank')
+              base=dictionary_by_word.get(word.casefold(),{})
+              entry=dict(base) if base else {'word':word,'phonetic':'','pos':'','definition':'','translation':'','tags':[],'frequency':{'bnc':None,'frq':None},'forms':'','examples':[],'audio':'','source':'NGSL 1.2'}
+              entry['word']=word
+              entry['ngslRank']=int(float(rank)) if rank and rank.replace('.','',1).isdigit() else None
+              entry['source']='NGSL 1.2; lexical fields where available from ECDICT'
+              ngsl_items.append(entry)
+          seen=set(); unique=[]
+          for x in ngsl_items:
+            k=x['word'].casefold()
+            if k not in seen: seen.add(k); unique.append(x)
+          unique.sort(key=lambda x:(x.get('ngslRank') is None,x.get('ngslRank') or 999999,x['word'].casefold()))
+          if unique: books['ngsl-1.2']=unique
           meta={v[0]:v[1] for v in tag_map.values()}
-          meta.update({'frequency-1k':'词频排名 1–1000','frequency-3k':'词频排名 1001–3000','frequency-5k':'词频排名 3001–5000','frequency-10k':'词频排名 5001–10000'})
+          meta.update({'frequency-1k':'词频排名 1–1000','frequency-3k':'词频排名 1001–3000','frequency-5k':'词频排名 3001–5000','frequency-10k':'词频排名 5001–10000','ngsl-1.2':'NGSL 1.2 核心词表'})
           catalog=[]
           for book_id,items in books.items():
             items.sort(key=lambda x:x['word'].casefold())
@@ -120,7 +141,7 @@ jobs:
           每条词目包含 word、phonetic、pos、definition、translation、tags、frequency、forms、examples、audio、source。缺失字段留空。
 
           考试词书由 ECDICT 自带 tag 字段筛选，覆盖率取决于源数据，不代表官方考试大纲的完整权威版本。
-          frequency-* 文件按 ECDICT 的 frq 字段分段。它是来源数据中的频率排名字段，未经独立验证，不应宣传为 COCA 官方词表。
+          frequency-* 文件按 ECDICT 的 frq 字段分段。它是来源数据中的频率排名字段，未经独立验证，不应宣传为 COCA 官方词表。NGSL 1.2 直接取自官方词表；释义等字段仅在与 ECDICT 词头完全匹配时补充，未匹配字段保持为空。
           ECDICT 例句字段可能缺失；本版本不会编造例句或例句翻译。
           sources/ecdict-full.csv.gz 是完整原始 CSV 的压缩副本；sources/open-english-wordnet-2025-json.zip 是英文释义/例句的补充源数据，目前单独保存，尚未自动合并，避免错误匹配词义。
 
@@ -130,11 +151,13 @@ jobs:
           # 来源与许可
 
           1. ECDICT: https://github.com/skywind3000/ECDICT
+          2. NGSL 1.2: https://www.newgeneralservicelist.com/new-general-service-list
+             官方词表，CC BY-SA 4.0；再分发时保留署名并遵守相同方式共享要求。
              字段包括英文词条、音标、英文释义、中文释义、词性、考试标签、频率、词形变化及可选扩展例句。请遵循 sources/ECDICT-LICENSE.txt 与上游说明。
-          2. Open English WordNet 2025: https://en-word.net/downloads
+          3. Open English WordNet 2025: https://en-word.net/downloads
              官方页面声明采用 Creative Commons Attribution 4.0 (CC BY 4.0)。保留归属并遵循该许可。该压缩包作为独立源数据提供，未在本次自动生成中合并。
 
-          本包不包含未授权复制的商业词书内容。中考、高考、四六级、雅思等文件是依据 ECDICT 公开标签筛选出的辅助词表，不声称是官方完整考试大纲。CEFR、NGSL、NAWL、BSL 等词表将在确认官方可下载文件及许可后另行加入，当前目录不伪装为已包含这些数据。
+          本包不包含未授权复制的商业词书内容。中考、高考、四六级、雅思等文件是依据 ECDICT 公开标签筛选出的辅助词表，不声称是官方完整考试大纲。CEFR、NAWL、BSL 等其他词表将在确认官方可下载文件及许可后另行加入；NGSL 1.2 已作为独立来源词表纳入。
           EOF
       - name: Package IIS-ready files
         run: |
