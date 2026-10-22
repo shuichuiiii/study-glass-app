@@ -260,9 +260,7 @@ class _VocabularyPageState extends State<VocabularyPage> {
             ]),
           ),
           const SizedBox(height: 28),
-          Text('词库资源', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 6),
-          Text('仅显示当前数据包实际生成的词书', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+          Text('按考试、难度、词频和专业领域浏览词书', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 18),
           for (final group in groups) Card(
             margin: const EdgeInsets.only(bottom: 10),
