@@ -1,0 +1,149 @@
+name: Build IIS vocabulary data package
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/build-iis-vocabulary.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-vocabulary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download source datasets and license notices
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p package/books package/sources package/docs
+          curl -fL --retry 3 https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv -o /tmp/ecdict.csv
+          curl -fL --retry 3 https://raw.githubusercontent.com/skywind3000/ECDICT/master/LICENSE -o package/sources/ECDICT-LICENSE.txt
+          curl -fL --retry 3 https://raw.githubusercontent.com/skywind3000/ECDICT/master/README.md -o package/sources/ECDICT-README.md
+          curl -fL --retry 3 https://en-word.net/static/english-wordnet-2025-json.zip -o package/sources/open-english-wordnet-2025-json.zip
+          curl -fL --retry 3 https://raw.githubusercontent.com/globalwordnet/english-wordnet/main/LICENSE -o package/sources/OEWN-LICENSE.txt || true
+          gzip -c /tmp/ecdict.csv > package/sources/ecdict-full.csv.gz
+      - name: Convert ECDICT into IIS JSON wordbooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv, json, os
+          from collections import defaultdict
+          root='package'
+          tag_map={
+            'zk':('middle-school','中考词汇'),
+            'gk':('gaokao','高考词汇'),
+            'cet4':('cet4','大学英语四级'),
+            'cet6':('cet6','大学英语六级'),
+            'ky':('kaoyan','考研词汇'),
+            'toefl':('toefl','托福词汇'),
+            'ielts':('ielts','雅思词汇'),
+            'gre':('gre','GRE词汇'),
+            'sat':('sat','SAT词汇'),
+            'gmat':('gmat','GMAT词汇'),
+            'bec':('bec','BEC商务英语'),
+            'tem4':('tem4','英语专业四级'),
+            'tem8':('tem8','英语专业八级'),
+          }
+          def split_tags(s):
+            return set((s or '').lower().replace(',', ' ').split())
+          def clean(row):
+            def val(k): return (row.get(k) or '').strip()
+            examples=[]
+            detail=val('detail')
+            if detail:
+              try:
+                obj=json.loads(detail)
+                if isinstance(obj,dict):
+                  for v in obj.values():
+                    if isinstance(v,str) and v.strip():
+                      examples.append({'text':v.strip(),'translation':''})
+                    elif isinstance(v,dict):
+                      text=v.get('例句') or v.get('example') or v.get('sentence') or ''
+                      trans=v.get('翻译') or v.get('translation') or ''
+                      if text: examples.append({'text':str(text).strip(),'translation':str(trans).strip()})
+              except Exception: pass
+            def num(k):
+              try: return int(val(k)) if val(k) else None
+              except Exception: return None
+            return {
+              'word':val('word'),'phonetic':val('phonetic'),'pos':val('pos'),
+              'definition':val('definition'),'translation':val('translation'),
+              'tags':sorted(split_tags(val('tag'))),
+              'frequency':{'bnc':num('bnc'),'frq':num('frq')},
+              'forms':val('exchange'),'examples':examples,'audio':val('audio'),
+              'source':'ECDICT'
+            }
+          books=defaultdict(list); total=0
+          with open('/tmp/ecdict.csv',encoding='utf-8-sig',newline='') as f:
+            reader=csv.DictReader(f)
+            for row in reader:
+              if not (row.get('word') or '').strip(): continue
+              item=clean(row); total+=1; tags=set(item['tags'])
+              for tag,(book_id,title) in tag_map.items():
+                if tag in tags: books[book_id].append(item)
+              frq=item['frequency']['frq']
+              if frq and frq>0:
+                if frq<=1000: books['coca-1k'].append(item)
+                elif frq<=3000: books['coca-3k'].append(item)
+                elif frq<=5000: books['coca-5k'].append(item)
+                elif frq<=10000: books['coca-10k'].append(item)
+          meta={v[0]:v[1] for v in tag_map.values()}
+          meta.update({'coca-1k':'高频词 1–1000','coca-3k':'词频 1001–3000','coca-5k':'词频 3001–5000','coca-10k':'词频 5001–10000'})
+          catalog=[]
+          for book_id,items in books.items():
+            items.sort(key=lambda x:x['word'].casefold())
+            filename=f'books/{book_id}.json'
+            with open(os.path.join(root,filename),'w',encoding='utf-8') as f:
+              json.dump({'id':book_id,'title':meta[book_id],'source':'ECDICT','count':len(items),'items':items},f,ensure_ascii=False,separators=(',',':'))
+            category='词频分级' if book_id.startswith('coca-') else '考试/学校词书'
+            catalog.append({'id':book_id,'title':meta[book_id],'category':category,'path':filename,'count':len(items),'source':'ECDICT'})
+          catalog.sort(key=lambda x:x['id'])
+          with open(os.path.join(root,'index.json'),'w',encoding='utf-8') as f:
+            json.dump({'schemaVersion':1,'name':'知学公开英语词库','generatedFrom':'ECDICT','totalSourceEntries':total,'books':catalog},f,ensure_ascii=False,indent=2)
+          print('ECDICT source entries:',total,'; wordbooks:',len(catalog))
+          for b in catalog: print(b['id'],b['count'])
+          PY
+      - name: Write IIS deployment instructions and attribution
+        shell: bash
+        run: |
+          cat > package/部署说明-中文.md <<'EOF'
+          # 知学词库静态文件（IIS）
+
+          将本目录中的 index.json、books/、sources/、docs/ 一并复制到 IIS 网站目录下的 vocabulary 子目录。
+          例如网站地址为 https://example.com/，目录清单应可通过 https://example.com/vocabulary/index.json 访问。
+
+          index.json 是目录清单；每个 books/*.json 文件包含 id、title、source、count、items。
+          每条词目包含 word、phonetic、pos、definition、translation、tags、frequency、forms、examples、audio、source。缺失字段留空。
+
+          考试词书由 ECDICT 自带 tag 字段筛选，覆盖率取决于源数据，不代表官方考试大纲的完整权威版本。
+          coca-* 文件按 ECDICT 的 frq 字段分段。它是来源数据中的频率排名字段，未经独立验证，不应宣传为 COCA 官方词表。
+          ECDICT 例句字段可能缺失；本版本不会编造例句或例句翻译。
+          sources/ecdict-full.csv.gz 是完整原始 CSV 的压缩副本；sources/open-english-wordnet-2025-json.zip 是英文释义/例句的补充源数据，目前单独保存，尚未自动合并，避免错误匹配词义。
+
+          IIS 确保 .json 与 .gz 文件可被静态访问；启用 HTTPS；不需要开启目录浏览。若部署在虚拟目录，APK 的服务器地址需包含 /vocabulary/。
+          EOF
+          cat > package/来源与许可.md <<'EOF'
+          # 来源与许可
+
+          1. ECDICT: https://github.com/skywind3000/ECDICT
+             字段包括英文词条、音标、英文释义、中文释义、词性、考试标签、频率、词形变化及可选扩展例句。请遵循 sources/ECDICT-LICENSE.txt 与上游说明。
+          2. Open English WordNet 2025: https://en-word.net/downloads
+             官方页面声明采用 Creative Commons Attribution 4.0 (CC BY 4.0)。保留归属并遵循该许可。该压缩包作为独立源数据提供，未在本次自动生成中合并。
+
+          本包不包含未授权复制的商业词书内容。中考、高考、四六级、雅思等文件是依据 ECDICT 公开标签筛选出的辅助词表，不声称是官方完整考试大纲。CEFR、NGSL、NAWL、BSL 等词表将在确认官方可下载文件及许可后另行加入，当前目录不伪装为已包含这些数据。
+          EOF
+      - name: Package IIS-ready files
+        run: |
+          cd package
+          zip -qr ../study-glass-iis-vocabulary.zip .
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: study-glass-iis-vocabulary
+          path: study-glass-iis-vocabulary.zip
+          if-no-files-found: error
+          retention-days: 30
