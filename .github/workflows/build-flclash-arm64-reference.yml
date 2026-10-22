@@ -1,10 +1,13 @@
-name: Build FlClash ARM64 UI reference
+name: Build proxyless 3-tab ARM64 preview
 
 on:
   workflow_dispatch:
   push:
     paths:
       - '.github/workflows/build-flclash-arm64-reference.yml'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - 'android/**'
 
 permissions:
   contents: read
@@ -13,14 +16,8 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout official FlClash source
+      - name: Checkout Study Glass UI (proxy backend omitted)
         uses: actions/checkout@v4
-        with:
-          repository: chen08209/FlClash
-          ref: main
-          submodules: recursive
-          fetch-depth: 0
-          path: FlClash
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -32,35 +29,25 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.47.6'
           cache: true
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.27.1'
-          cache: true
-          cache-dependency-path: FlClash/core/go.sum
+      - name: Generate Android platform files
+        run: flutter create --platforms=android .
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: flutter pub get
 
-      - name: Install Android NDK
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r28c
-          link-to-sdk: true
-
-      - name: Build official ARM64 APK
-        working-directory: FlClash
+      - name: Verify the three-tab UI and build ARM64 APK
         run: |
-          flutter pub get
-          dart setup.dart android --arch arm64
+          grep -q "LearningPage()" lib/main.dart
+          grep -q "VocabularyPage()" lib/main.dart
+          grep -q "SettingsPage(" lib/main.dart
+          flutter build apk --release --target-platform android-arm64
 
-      - name: Upload APKs for inspection
+      - name: Upload proxyless ARM64 APK
         uses: actions/upload-artifact@v4
         with:
-          name: flclash-arm64-reference-apk
-          path: FlClash/dist/**/*.apk
+          name: study-glass-proxyless-3tabs-arm64
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 7
