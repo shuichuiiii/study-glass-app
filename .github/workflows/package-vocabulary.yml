@@ -1,0 +1,53 @@
+name: Package open English vocabulary dataset
+
+on:
+  push:
+    paths:
+      - ".github/workflows/package-vocabulary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download openly licensed Openjam dataset
+        run: |
+          set -euo pipefail
+          mkdir -p vocabulary-package/data
+          curl -fL --retry 3 https://raw.githubusercontent.com/amirj4m/openjam/main/data/json/words_en.json -o vocabulary-package/data/words_en.json
+          curl -fL --retry 3 https://raw.githubusercontent.com/amirj4m/openjam/main/data/json/phonetics.json -o vocabulary-package/data/phonetics.json
+          curl -fL --retry 3 https://raw.githubusercontent.com/amirj4m/openjam/main/data/json/word_forms.json -o vocabulary-package/data/word_forms.json
+          curl -fL --retry 3 https://raw.githubusercontent.com/amirj4m/openjam/main/data/json/word_categories.json -o vocabulary-package/data/word_categories.json
+          curl -fL --retry 3 https://raw.githubusercontent.com/amirj4m/openjam/main/data/json/categories.json -o vocabulary-package/data/categories.json
+          curl -fL --retry 3 https://raw.githubusercontent.com/amirj4m/openjam/main/LICENSE -o vocabulary-package/LICENSE-Openjam.txt
+          curl -fL --retry 3 https://raw.githubusercontent.com/amirj4m/openjam/main/ATTRIBUTION.md -o vocabulary-package/ATTRIBUTION-Openjam.md
+      - name: Add package guide
+        run: |
+          cat > vocabulary-package/README-中文.md <<'EOF'
+          # 英语词汇数据包（Openjam）
+
+          本包使用 Openjam 项目的公开词汇数据，项目声明采用 MIT 许可证。数据包含英文词条及可用的音标/发音信息、词形、主题分类；词条的 CEFR 等级字段以原始数据实际提供为准。请注意：它不是“所有英语单词”的完整全集，也不等同于官方 Oxford 3000/5000 词表。
+
+          ## 文件
+          - data/words_en.json：英文词条主数据（含等级/频率字段，以源文件为准）
+          - data/phonetics.json：音标数据
+          - data/word_forms.json：词形数据
+          - data/word_categories.json、data/categories.json：主题分类
+          - LICENSE-Openjam.txt、ATTRIBUTION-Openjam.md：许可证和来源说明
+
+          ## 来源
+          https://github.com/amirj4m/openjam
+          数据许可和第三方来源请以包内许可证、归属说明及上游最新说明为准。
+          EOF
+      - name: Package ZIP
+        run: zip -r english-vocabulary-openjam.zip vocabulary-package
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: english-vocabulary-openjam
+          path: english-vocabulary-openjam.zip
+          if-no-files-found: error
+          retention-days: 14
