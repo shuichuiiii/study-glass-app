@@ -118,42 +118,47 @@ class _StudyHomeState extends State<StudyHome> {
     ];
     return Scaffold(
       body: LiquidGlassScope(
-        enabled: widget.glass != 'off',
-        quality: widget.glass == 'standard'
-            ? LiquidGlassQuality.standard
-            : LiquidGlassQuality.ultra,
+        enabled: false,
+        quality: LiquidGlassQuality.standard,
         child: LiquidGlassHost(
-          enabled: widget.glass != 'off',
-          child: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: Duration(milliseconds: widget.motion ? 300 : 0),
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(0, .025), end: Offset.zero).animate(animation),
-                  child: child,
-                ),
-              ),
-              child: KeyedSubtree(key: ValueKey(tab), child: pages[tab]),
+          enabled: false,
+          child: AnimatedSwitcher(
+            duration: Duration(milliseconds: widget.motion ? 220 : 0),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: child,
             ),
-          ),
-          Positioned(
-            left: widget.floatingBar ? 16 : 0,
-            right: widget.floatingBar ? 16 : 0,
-            bottom: widget.floatingBar ? MediaQuery.paddingOf(context).bottom + 10 : 0,
-            child: LiquidDock(
-              index: tab,
-              glass: widget.glass,
-              floatingBar: widget.floatingBar,
-              animate: widget.motion,
-              onSelect: (i) => setState(() => tab = i),
-            ),
-          ),
-        ],
+            child: KeyedSubtree(key: ValueKey(tab), child: pages[tab]),
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: tab,
+        onTap: (index) => setState(() => tab = index),
+        type: BottomNavigationBarType.fixed,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 8,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_stories_outlined),
+            activeIcon: Icon(Icons.auto_stories_rounded),
+            label: '学习',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.library_books_outlined),
+            activeIcon: Icon(Icons.library_books_rounded),
+            label: '词库',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.tune_rounded),
+            activeIcon: Icon(Icons.tune_rounded),
+            label: '设置',
+          ),
+        ],
       ),
     );
   }
@@ -346,14 +351,13 @@ class SettingsPage extends StatelessWidget {
           ),
           Card(child: SwitchListTile(value: dynamicColor, onChanged: onDynamicColor, title: const Text('动态主题色'), subtitle: const Text('支持的 Android 设备可使用系统配色'), secondary: const Icon(Icons.color_lens_outlined))),
           const SizedBox(height: 20),
-          Text('导航栏样式', style: theme.textTheme.titleLarge),
+          Text('底部导航栏', style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
-          Card(
-            child: Column(
-              children: [
-                RadioListTile<bool>(value: true, groupValue: floatingBar, onChanged: (v) { if (v != null) onFloatingBar(v); }, title: const Text('悬浮'), subtitle: const Text('圆角底栏与页面保持间距')),
-                RadioListTile<bool>(value: false, groupValue: floatingBar, onChanged: (v) { if (v != null) onFloatingBar(v); }, title: const Text('贴底'), subtitle: const Text('底栏贴合屏幕底部')),
-              ],
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.bottom_navigation),
+              title: Text('Material BottomNavigationBar'),
+              subtitle: Text('经典固定底栏，当前包含学习、词库、设置三个入口。'),
             ),
           ),
           const SizedBox(height: 20),
